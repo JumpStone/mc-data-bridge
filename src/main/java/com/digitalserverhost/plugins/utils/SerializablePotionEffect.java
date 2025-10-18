@@ -1,6 +1,8 @@
 package com.digitalserverhost.plugins.utils;
 
 
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -20,7 +22,7 @@ public class SerializablePotionEffect {
         if (effect == null) {
             return;
         }
-        this.typeKey = effect.getType().getName();
+        this.typeKey = effect.getType().getKeyOrThrow().getKey();
         this.duration = effect.getDuration();
         this.amplifier = effect.getAmplifier();
         this.ambient = effect.isAmbient();
@@ -32,7 +34,7 @@ public class SerializablePotionEffect {
         if (typeKey == null) {
             return null;
         }
-        PotionEffectType effectType = PotionEffectType.getByName(typeKey);
+        PotionEffectType effectType = Registry.EFFECT.get(NamespacedKey.fromString(typeKey.toLowerCase(java.util.Locale.ROOT)));
         if (effectType == null) {
             return null;
         }
