@@ -1,85 +1,82 @@
 # MC Data Bridge
 
-MC Data Bridge is a Spigot/Paper plugin designed to seamlessly synchronize player data across multiple Minecraft servers. This allows players to move between linked servers (e.g., a Towny server and a Resource server) and retain their health, hunger, experience, inventory, armor, and active potion effects.
+MC Data Bridge is a robust, high-performance Spigot/Paper plugin designed to seamlessly synchronize player data across multiple Minecraft servers. It ensures that players have a consistent experience, retaining their health, hunger, experience, inventory, and more as they move between linked servers.
 
 ## Features
 
-*   **Cross-Server Player Data Sync:** Synchronizes core player data including:
-    *   Health
-    *   Food Level & Saturation
-    *   Experience (Total XP, current XP, and Level)
-    *   Inventory Contents
-    *   Armor Contents
-    *   Active Potion Effects
-*   **Configurable Database Connection:** Easily connect to your MySQL database.
-*   **Flexible Synchronization Groups:** Create distinct synchronization groups by using different database credentials or table names for different sets of servers. For example, you can have one database for your "Towny" servers and another for your "vanilla" servers, ensuring data is synced only within those specific groups.
+  * **Fully Asynchronous:** All database operations are performed on a separate thread, ensuring that your server's main thread is never blocked. This means no lag or crashes, even if your database is slow to respond.
+  * **Race-Condition Safe:** A database-level locking mechanism prevents data loss when players switch servers quickly. This guarantees that the most recent player data is always loaded.
+  * **Version-Independent Item Serialization:** Player inventories are serialized using a robust NBT-based method, which prevents data loss when you update your Minecraft server to a new version.
+  * **Cross-Server Player Data Sync:** Synchronizes core player data including:
+      * Health
+      * Food Level & Saturation
+      * Experience (Total XP, current XP, and Level)
+      * Inventory Contents
+      * Armor Contents
+      * Active Potion Effects
+  * **Resilient Connection Pooling:** Uses HikariCP with optimized settings to ensure that the database connection is resilient to network issues and database restarts.
+  * **Configurable & Flexible:** Easily connect to your MySQL database and create distinct synchronization groups for different sets of servers.
 
 ## Installation
 
 1.  **Build the Plugin:**
-    *   Navigate to the plugin's root directory in your terminal.
-    *   Run `mvn clean package` to build the plugin.
-    *   The compiled JAR file (`mc-data-bridge-1.21.8.1-shaded.jar`) will be located in the `target/` directory.
+      * Navigate to the plugin's root directory in your terminal.
+      * Run `mvn clean package` to build the plugin.
+      * The compiled JAR file (`mc-data-bridge-1.21.10.*.jar`) will be located in the `target/` directory.
 2.  **Deploy to Servers:**
-    *   Copy the `mc-data-bridge-1.21.8.1-shaded.jar` file into the `plugins/` folder of each PaperMC server you wish to synchronize.
+      * Copy the `mc-data-bridge-1.21.10.*.jar` file into the `plugins/` folder of each PaperMC server you wish to synchronize.
 
 ## Configuration
 
-A `config.yml` file will be generated in the `plugins/mc-data-bridge/` folder after the first run (or you can create it manually). You **must** update this file with your MySQL database credentials.
+A `config.yml` file will be generated in the `plugins/mc-data-bridge/` folder after the first run. You must update this file with your MySQL database credentials. The file is pre-configured with optimized settings for performance and stability.
 
 ```yaml
+# MySQL Database Configuration
 database:
   host: localhost
   port: 3306
   database: minecraft
   username: user
   password: password
+
+  # HikariCP Connection Pool Settings
+  # These settings are optimized for resilience and performance.
+  # It is recommended to leave these at their default values unless you are an experienced administrator.
+  pool-settings:
+    maximum-pool-size: 10
+    minimum-idle: 10
+    max-lifetime: 1800000 # 30 minutes
+    connection-timeout: 5000 # 5 seconds
+    idle-timeout: 600000 # 10 minutes
+
+  # MySQL JDBC Optimizations
+  # These are advanced settings for the MySQL driver.
+  # Do not change these unless you know what you are doing.
+  optimizations:
+    cache-prep-stmts: true
+    prep-stmt-cache-size: 250
+    prep-stmt-cache-sql-limit: 2048
+    use-server-prep-stmts: true
+    use-local-session-state: true
+    rewrite-batched-statements: true
+    cache-result-set-metadata: true
+    cache-server-configuration: true
+    elide-set-auto-commits: true
+    maintain-time-stats: false
+
+# Set to true to enable verbose debugging messages in the server console.
+# This can be useful for diagnosing issues, but should be false for normal operation.
 debug: false
 ```
 
-*   **`database.host`**: Your MySQL database host (e.g., `localhost`, `127.0.0.1`, a remote IP, or a [Docker named volume](https://docs.docker.com/storage/volumes/#create-and-manage-volumes) if your database is running in Docker).
-*   **`database.port`**: The port your MySQL database is running on (default is `3306`).
-*   **`database.database`**: The name of the database to use for player data.
-*   **`database.username`**: The username for connecting to your database.
-*   **`database.password`**: The password for the database user.
-*   **`debug`**: Set to `true` to enable verbose debugging messages in the server console. Set to `false` for normal operation.
-
-### Synchronizing Multiple Server Groups
-
-To sync player data between specific groups of servers (e.g., a Towny server and a Towny resource server, separate from a Creative server), simply configure the `database.database` (or even entirely different `database.host`, `username`, `password`) to match for the servers you want to link.
-
-**Example:**
-
-*   **Towny Servers (Towny-Main, Towny-Resource):**
-    ```yaml
-    database:
-      host: my_db_host
-      port: 3306
-      database: towny_player_data # All Towny servers use this database
-      username: towny_user
-      password: towny_password
-    debug: false
-    ```
-*   **Creative Servers (Creative-Build, Creative-Minigame):**
-    ```yaml
-    database:
-      host: my_db_host
-      port: 3306
-      database: creative_player_data # All Creative servers use this database
-      username: creative_user
-      password: creative_password
-    debug: false
-    ```
-
 ## Usage
 
-1.  **Add the JAR:** Place the `mc-data-bridge-1.21.8.1-shaded.jar` file into the `plugins/` folder of all your PaperMC servers.
-2.  **Configure:** Edit the `config.yml` in each server's `plugins/mc-data-bridge/` folder with the appropriate database credentials for your desired synchronization groups.
-3.  **Restart Servers:** Restart your Minecraft server containers (or the servers themselves) to apply the plugin and configuration changes.
-4.  **Enjoy!** Players can now seamlessly switch between your linked servers, and their data will be synchronized automatically.
+1.  **Add the JAR:** Place the `mc-data-bridge-1.21.10.*.jar` file into the `plugins/` folder of all your PaperMC servers.
+2.  **Configure:** Edit the `config.yml` in each server's `plugins/mc-data-bridge/` folder with the appropriate database credentials.
+3.  **Restart Servers:** Restart your Minecraft servers to apply the plugin and configuration changes.
+4.  **Enjoy\!** Players can now seamlessly switch between your linked servers, and their data will be synchronized automatically and safely.
 
 ## Important Notes
 
-*   This plugin requires a **MySQL database** to function. Ensure your database server is accessible from your Minecraft servers.
-*   The plugin will automatically create the `player_data` table in your specified database if it doesn't already exist.
-*   You might still see warnings about deprecated APIs during compilation. These are generally harmless and do not prevent the plugin from functioning.
+  * This plugin requires a **MySQL database** to function. Ensure your database server is accessible from your Minecraft servers.
+  * The plugin will automatically create and update the `player_data` table in your specified database.

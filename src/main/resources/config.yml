@@ -1,7 +1,36 @@
+# MySQL Database Configuration
 database:
   host: localhost
   port: 3306
   database: minecraft
   username: user
   password: password
+
+  # HikariCP Connection Pool Settings
+  # These settings are optimized for resilience and performance.
+  # It is recommended to leave these at their default values unless you are an experienced administrator.
+  pool-settings:
+    maximum-pool-size: 10
+    minimum-idle: 10
+    max-lifetime: 1800000 # 30 minutes
+    connection-timeout: 5000 # 5 seconds
+    idle-timeout: 600000 # 10 minutes
+
+  # MySQL JDBC Optimizations
+  # These are advanced settings for the MySQL driver.
+  # Do not change these unless you know what you are doing.
+  optimizations:
+    cache-prep-stmts: true
+    prep-stmt-cache-size: 250
+    prep-stmt-cache-sql-limit: 2048
+    use-server-prep-stmts: true
+    use-local-session-state: true
+    rewrite-batched-statements: true
+    cache-result-set-metadata: true
+    cache-server-configuration: true
+    elide-set-auto-commits: true
+    maintain-time-stats: false
+
+# Set to true to enable verbose debugging messages in the server console.
+# This can be useful for diagnosing issues, but should be false for normal operation.
 debug: false
