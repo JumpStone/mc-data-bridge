@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
@@ -16,12 +17,16 @@ import org.bukkit.potion.PotionEffect;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerListener implements Listener {
 
     private final DatabaseManager databaseManager;
     private final MCDataBridge plugin;
     private final Gson gson;
+    private final Map<UUID, PlayerData> loadingCache = new ConcurrentHashMap<>();
 
     public PlayerListener(DatabaseManager databaseManager, MCDataBridge plugin) {
         this.databaseManager = databaseManager;
@@ -30,39 +35,51 @@ public class PlayerListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerLogin(PlayerLoginEvent event) {
+        Player player = event.getPlayer();
+        String uuid = player.getUniqueId().toString();
+
+        try {
+            if (!waitForLockRelease(player)) {
+                event.disallow(PlayerLoginEvent.Result.KICK_OTHER, "§c[DataBridge] Your data is currently being saved from another server. Please try again.");
+                return;
+            }
+
+            try (Connection connection = databaseManager.getConnection()) {
+                PreparedStatement statement = connection.prepareStatement("SELECT data FROM player_data WHERE uuid = ?");
+                statement.setString(1, uuid);
+                ResultSet resultSet = statement.executeQuery();
+
+                if (resultSet.next()) {
+                    String json = resultSet.getString("data");
+                    if (json == null || json.trim().isEmpty() || json.equals("{}")) {
+                        return;
+                    }
+                    
+                    PlayerData data = gson.fromJson(json, PlayerData.class);
+                    loadingCache.put(player.getUniqueId(), data);
+                    
+                } else {
+                    plugin.getLogger().info("No data found for new player " + player.getName() + ".");
+                }
+            }
+        } catch (PlayerData.ItemDeserializationException e) {
+            plugin.getLogger().severe("A critical error occurred while deserializing inventory for player " + player.getName() + ". " + e.getMessage());
+            event.disallow(PlayerLoginEvent.Result.KICK_OTHER, "§c[DataBridge] A critical error occurred while deserializing your inventory. Please contact an administrator.");
+        } catch (Exception e) {
+            plugin.getLogger().severe("Critical error loading data for player " + player.getName() + ": " + e.getMessage());
+            event.disallow(PlayerLoginEvent.Result.KICK_OTHER, "§c[DataBridge] Could not load your player data. Please relog.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                if (!waitForLockRelease(player)) {
-                    kickPlayerForError(player, "Your data is currently being saved from another server. Please try again in a moment.");
-                    return;
-                }
-
-                try (Connection connection = databaseManager.getConnection()) {
-                    PreparedStatement statement = connection.prepareStatement("SELECT data FROM player_data WHERE uuid = ?");
-                    statement.setString(1, player.getUniqueId().toString());
-                    ResultSet resultSet = statement.executeQuery();
-
-                    if (resultSet.next()) {
-                        String json = resultSet.getString("data");
-                        if (json == null || json.trim().isEmpty() || json.equals("{}")) {
-                            return;
-                        }
-                        PlayerData data = gson.fromJson(json, PlayerData.class);
-
-                        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                            applyPlayerData(player, data);
-                        }, 1L);
-                    } else {
-                        plugin.getLogger().info("No data found for new player " + player.getName() + ".");
-                    }
-                }
-            } catch (Exception e) {
-                plugin.getLogger().severe("Critical error loading data for player " + player.getName() + ": " + e.getMessage());
-                kickPlayerForError(player, "Could not load your player data. Please relog.");
-            }
-        });
+        PlayerData data = loadingCache.remove(player.getUniqueId());
+        
+        if (data != null) {
+            applyPlayerData(player, data);
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -89,14 +106,12 @@ public class PlayerListener implements Listener {
         // Now, do all the heavy lifting off the main thread.
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
-                // Create PlayerData (this now does the slow NBT serialization async)
                 PlayerData data = new PlayerData(
                         health, foodLevel, saturation, exhaustion,
                         totalExperience, exp, level,
                         inventoryContents, armorContents, potionEffects
                 );
 
-                // Serialize PlayerData to JSON (also async)
                 String json = gson.toJson(data);
 
                 try (Connection connection = databaseManager.getConnection()) {
@@ -119,7 +134,6 @@ public class PlayerListener implements Listener {
                 }
 
             } catch (Exception e) {
-                // This will catch errors from the PlayerData constructor (e.g., NBT-API issues)
                 plugin.getLogger().severe("Failed to serialize player data for " + player.getName() + ". Data was NOT saved. Error: " + e.getMessage());
             }
         });

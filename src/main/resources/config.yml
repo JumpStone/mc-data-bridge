@@ -6,6 +6,12 @@ database:
   username: user
   password: password
 
+  # A list of JDBC properties to apply.
+  # These are recommended, but you can change/add/remove as needed.
+  properties:
+    useSSL: false
+    allowPublicKeyRetrieval: true
+
   # HikariCP Connection Pool Settings
   # These settings are optimized for resilience and performance.
   # It is recommended to leave these at their default values unless you are an experienced administrator.

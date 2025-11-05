@@ -15,10 +15,18 @@ public class DatabaseManager {
         HikariConfig hikariConfig = new HikariConfig();
 
         // Standard connection details
-        String jdbcUrl = "jdbc:mysql://" + config.getString("database.host") + ":" + config.getInt("database.port") + "/" + config.getString("database.database") + "?useSSL=false&allowPublicKeyRetrieval=true";
+        String jdbcUrl = "jdbc:mysql://" + config.getString("database.host") + ":" + config.getInt("database.port") + "/" + config.getString("database.database");
         hikariConfig.setJdbcUrl(jdbcUrl);
         hikariConfig.setUsername(config.getString("database.username"));
         hikariConfig.setPassword(config.getString("database.password"));
+
+        // Add all properties from the config
+        if (config.isConfigurationSection("database.properties")) {
+            for (String key : config.getConfigurationSection("database.properties").getKeys(false)) {
+                String value = config.getString("database.properties." + key);
+                hikariConfig.addDataSourceProperty(key, value);
+            }
+        }
 
         // Pool settings from config
         hikariConfig.setMaximumPoolSize(config.getInt("database.pool-settings.maximum-pool-size", 10));
