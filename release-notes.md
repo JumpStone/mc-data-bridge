@@ -1,15 +1,17 @@
-# Release Notes - v2.0.6
+# Release Notes - v2.0.7
 
-## 🚀 CI/CD & Process Automation
+## 🚀 Open Source & Automation Update
 
-This release focuses on improving the development lifecycle, automation, and project stability. **No changes have been made to the in-game plugin logic.**
+This release marks a major milestone for the project's infrastructure, enabling a fully automated release pipeline and preparing the codebase for public contributions.
 
-### New Features
+### ✨ CI/CD Pipeline
 
-- **Automated Release Pipeline**: Merging to `main` now automatically builds, verifies, tags (git), and publishes (GitHub Release) the artifacts.
-- **Strict Version Control**: Added CI checks that prevent merging if versions in `pom.xml`, `plugin.yml`, `bungee.yml`, and `release-notes.md` do not match or if the version tag already exists.
-- **Helper Scripts**: Added `scripts/update-version.sh` to interactively bump versions across all required files.
+- **Automated Releases**: Merging to `main` now automatically builds, verifies, tags, and publishes releases to GitHub.
+- **Strict Version Control**: CI now enforces version consistency across `pom.xml`, `plugin.yml`, `bungee.yml`, and `release-notes.md`.
+- **Branch Protection Support**: The pipeline is configured to work securely with protected branches using explicit token authentication.
 
-### Documentation
+### 🛠 Developer Experience
 
-- Updated `CONTRIBUTING.md` (implied) and workflows to reflect the new strict release process.
+- **New Helper Script**: Added `scripts/update-version.sh` to streamline version bumps across all project files.
+- **Documentation**: Overhauled `CONTRIBUTING.md` and `README.md` with clear instructions for contributors and build processes.
+- **Standardization**: Enforced consistent versioning (SNAPSHOTs for dev, semantic versioning for releases).
