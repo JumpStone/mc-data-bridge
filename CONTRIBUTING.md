@@ -15,6 +15,19 @@ Thank you for your interest in contributing to MC Data Bridge! We welcome contri
 3.  **Run Tests**: Ensure all tests pass using `mvn test`.
     - PRs will not be merged if tests fail.
 
+## Release Process (Maintainers Only)
+
+To prepare a new release:
+
+1.  **Update Version**: Run the helper script to verify and update versions across all files.
+    ```bash
+    ./scripts/update-version.sh
+    ```
+2.  **Update Release Notes**: Manually edit `release-notes.md` to describe the changes. **The build will fail if this is missed.**
+3.  **Commit & Push**: Commit the version changes and push to a feature branch.
+4.  **Create PR**: Open a PR to `main`.
+5.  **Merge**: Once approved and checks pass, merge to `main` to trigger the automated release.
+
 ## Pull Requests
 
 1.  Push your branch to your fork.
