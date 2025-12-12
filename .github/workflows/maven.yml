@@ -110,7 +110,8 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
           git tag $TAG_NAME
-          git push origin $TAG_NAME
+          # Use explicit token auth to ensure the PAT is used for the push
+          git push "https://x-access-token:${{ secrets.RELEASE_TOKEN }}@github.com/${{ github.repository }}.git" $TAG_NAME
 
       - name: Create GitHub Release
         id: create_release
@@ -134,4 +135,5 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
           git commit -am "Prepare for next development iteration ($SNAPSHOT_VERSION)."
-          git push
+          # Use explicit token auth for the commit push as well
+          git push "https://x-access-token:${{ secrets.RELEASE_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:main
