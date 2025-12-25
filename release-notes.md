@@ -1,4 +1,4 @@
-# Release Notes - v2.1.1-SNAPSHOT
+# Release Notes - v2.1.1
 
 **MC Data Bridge v2.1.1** - **Critical Bug Fix & Stability Update**
 
